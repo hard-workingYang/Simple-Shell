@@ -112,3 +112,12 @@ int parseline(char* buf, char** argv)
 	return bg;
 }
 /* $end parseline */
+
+/* $begin splitline */ /* 分号的处理 */
+int splitline()
+{
+
+}
+
+
+/* $end aplitline */
