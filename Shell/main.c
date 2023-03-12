@@ -129,7 +129,7 @@ char* splitine(char * subCmd, char * tmpCmdline, char *tmpSubCmd)
 
 	if (subCmd != NULL)
 		strcpy(tmpSubCmd, subCmd);
-	/* 执行 */
+
 	if (tmpSubCmd[strlen(tmpSubCmd) - 1] != '\n')
 		strcat(tmpSubCmd, "\n");
 
