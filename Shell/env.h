@@ -6,7 +6,7 @@ int VLenviron2Table();
 const char * getVLByName(const char *name);
 
 //设置全局变量
-int setGrobalVLByName(const char* varName, const char *value);
+int setGlobalVLByName(const char* varName, const char *value);
 
 //设置局部变量
 int setLocalVLByName(const char* varName, const char *value);

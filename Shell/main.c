@@ -1,5 +1,6 @@
 /* $begin shellmain */
 #include "csapp.h"
+#include "builtin.h"
 #define MAXARGS   128
 
 /* function prototypes */
@@ -11,6 +12,9 @@ char* splitine(char* subCmd, char* tmpCmdline, char* tmpSubCmd);
 int main()
 {
 	char cmdline[MAXLINE]; /* 保存命令行 */
+
+	// 读取系统环境变量
+	VLenviron2Table();
 
 	while (1) {
 		/* 读入 */
@@ -79,8 +83,10 @@ int builtin_command(char** argv)
 {
 	if (!strcmp(argv[0], "quit")) /* quit command */
 		exit(0);
-	if (!strcmp(argv[0], "&"))    /* Ignore singleton &(发生于& & & ...) */
+	else if (!strcmp(argv[0], "&"))    /* Ignore singleton &(发生于& & & ...) */
 		return 1;
+	else if (!strcmp(argv[0], "cd"))
+		return builtin_cd(argv);
 	return 0;                     /* Not a builtin command */
 }
 /* $end eval */
@@ -136,3 +142,4 @@ char* splitine(char * subCmd, char * tmpCmdline, char *tmpSubCmd)
 	return subCmd;
 }
 /* end splitline */
+

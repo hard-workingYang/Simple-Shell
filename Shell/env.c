@@ -93,7 +93,7 @@ static int setVLByName(const char* varName, const char *value, char isGrobal){
     }
 }
 
-int setGrobalVLByName(const char* varName, const char *value){
+int setGlobalVLByName(const char* varName, const char *value){
     return setVLByName(varName, value, 1);
 }
 int setLocalVLByName(const char* varName, const char *value){
@@ -117,11 +117,4 @@ void traverse(){
 
 static void traverseSimple(char isGrobal, char*addr){
     printf("%d %s\n", isGrobal, addr);    
-}
-int main()
-{
-    VLenviron2Table();
-    setLocalVLByName("ZCY", "hello world");
-    traverseVLTable(traverseSimple);
-    return 0;
 }
