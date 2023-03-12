@@ -6,6 +6,7 @@
 void eval(char* cmdline);
 int parseline(char* buf, char** argv);
 int builtin_command(char** argv);
+char* splitine(char* subCmd, char* tmpCmdline, char* tmpSubCmd);
 
 int main()
 {
@@ -18,9 +19,14 @@ int main()
 		Fgets(cmdline, MAXLINE, stdin);  // csapp对fgets做了保护措施的实现
 		if (feof(stdin))
 			exit(0);
-
-		/* 执行 */
-		eval(cmdline);
+		
+		char* subCmd = NULL;
+		char tmpCmdline[MAXLINE];
+		char tmpSubCmd[MAXLINE];
+		strcpy(tmpCmdline, cmdline);
+		while ((subCmd = splitine(subCmd, tmpCmdline, tmpSubCmd)) != NULL) {
+			eval(tmpSubCmd);
+		}
 	}
 }
 /* $end shellmain */
@@ -112,3 +118,21 @@ int parseline(char* buf, char** argv)
 	return bg;
 }
 /* $end parseline */
+
+/* begin splitline */
+char* splitine(char * subCmd, char * tmpCmdline, char *tmpSubCmd)
+{
+	if (subCmd == NULL)
+		subCmd = strtok(tmpCmdline, ";"); // 第一次调用需要传入待分割的字符串和分隔符
+	else
+		subCmd = strtok(NULL, ";");
+
+	if (subCmd != NULL)
+		strcpy(tmpSubCmd, subCmd);
+
+	if (tmpSubCmd[strlen(tmpSubCmd) - 1] != '\n')
+		strcat(tmpSubCmd, "\n");
+
+	return subCmd;
+}
+/* end splitline */
