@@ -38,19 +38,18 @@ void sigchld_handler(int signum)
     return;
 }
 
-static void sigtstp_pid(JobItem *jobitem){
-    if(jobitem->state == S_RUNNING){
-    //    if(kill(-jobitem->pid, SIGSTOP) == 0){
-        printf("try to kill : %d\n", jobitem->pid);
-
-        int ret;
-        if((ret = kill(jobitem->pid, SIGTSTP)) == 0){
-            // printf("modify %d to suspended\n", jobitem->pid);
-            jobitem->state = S_SUSPENDED;
-        }
-        printf("ret: %d, errno = %d\n", ret, errno);
-    }
-}
+// static void sigtstp_pid(JobItem *jobitem){
+//     if(jobitem->state == S_RUNNING){
+//     //    if(kill(-jobitem->pid, SIGSTOP) == 0){
+//         printf("try to kill : %d\n", jobitem->pid);
+//         int ret;
+//         if((ret = kill(jobitem->pid, SIGTSTP)) == 0){
+//             // printf("modify %d to suspended\n", jobitem->pid);
+//             jobitem->state = S_SUSPENDED;
+//         }
+//         printf("ret: %d, errno = %d\n", ret, errno);
+//     }
+// }
 
 //ctrl z
 void sigtstp_handler(int signum){
@@ -69,9 +68,8 @@ void sigtstp_handler(int signum){
     //现在改为直接向组id发送kill
     int job_gpid = get_jobgpid(jid);
     int ret = kill(-job_gpid, SIGTSTP);
-    // process_job(jid, sigtstp_pid);
-    printf("job_gpid: %d\n", job_gpid);
-    printf("ret: %d, errno = %d\n", ret, errno);
+    // printf("job_gpid: %d\n", job_gpid);
+    // printf("ret: %d, errno = %d\n", ret, errno);
 
     //清除fgjid的记录
     clear_fgjid(jid);
@@ -82,7 +80,7 @@ void sigtstp_handler(int signum){
 
 static void sigini_pid(JobItem *jobitem){
     if(jobitem->state == S_RUNNING || jobitem->state == S_SUSPENDED){
-        kill(-jobitem->pid, SIGINT);
+        kill(jobitem->pid, SIGINT);
         jobitem->state = S_ABORTED;
     }
 }
@@ -99,6 +97,8 @@ void sigini_handler(int signum){
 		return; //此时没有前台作业
     }
     
+    // int job_gpid = get_jobgpid(jid);
+    // int ret = kill(-job_gpid, SIGINT);
     //将job中的都abort
     process_job(jid, sigini_pid);
 
@@ -116,7 +116,7 @@ void sigini_handler(int signum){
 //TODO 有个问题 会不会恢复之后全部都是running状态。。
 static void sigcont_pid(JobItem *jobitem){
     //SIGCONT让对应的job恢复执行 负数则是处理给对应的进程组
-    if(jobitem->state == S_SUSPENDED && (kill(-jobitem->pid, SIGCONT) == 0)){
+    if(jobitem->state == S_SUSPENDED && (kill(jobitem->pid, SIGCONT) == 0)){
         jobitem->state = S_RUNNING;
     }
 }
@@ -139,7 +139,10 @@ void UnMaskAll(){
 //job前台执行
 void fg_signal(int jid){
     //首先对于jid中的process发送SIGCONT
+    // int job_gpid = get_jobgpid(jid);
+    // int ret = kill(-job_gpid, SIGCONT);
     process_job(jid, sigcont_pid);
+
     //设置JID
     set_fgjid(jid);
 }
@@ -166,18 +169,22 @@ void fg_wait(int jid){
 //后台执行信号
 void bg_signal(int jid){
     //由于转到bg的可能是暂停的进程，所以需要设置信号
+    // int job_gpid = get_jobgpid(jid);
+    // int ret = kill(-job_gpid, SIGCONT);
     process_job(jid, sigcont_pid);
     clear_fgjid(jid);
 }
 
 static void sigkill_pid(JobItem *jobitem){
     //SIGCONT让对应的job恢复执行 负数则是处理给对应的进程组
-    if((jobitem->state != S_KILLED && jobitem->state != S_ABORTED)  && (kill(-jobitem->pid, SIGKILL) == 0)){
+    if((jobitem->state != S_KILLED && jobitem->state != S_ABORTED)  && (kill(jobitem->pid, SIGKILL) == 0)){
         jobitem->state = S_RUNNING;
     }
 }
 
 void killjid_signal(int jid, int signal){
+    // int job_gpid = get_jobgpid(jid);
+    // int ret = kill(-job_gpid, SIGKILL);
     process_job(jid, sigkill_pid);
 }
 void killpid_signal(int pid, int signal){

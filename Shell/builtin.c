@@ -129,7 +129,9 @@ static int bg_one(int jid){
 	printf("bg_one jid %d\n", jid);
 	//现在就要把后台job抬出来处理
 	//发送信号启动后台的进程
+	print_jobpgids(jid);
 	bg_signal(jid);
+	print_jobpgids(jid);
 
 	UnMaskAll();
 

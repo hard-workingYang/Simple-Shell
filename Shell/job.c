@@ -2,6 +2,8 @@
 #include <string.h>
 #include "job.h"
 #include "signal.h"
+#include <unistd.h>
+
 
 Job g_Jobs[MAXJOBS];
 
@@ -218,7 +220,6 @@ int process_job(int jid, void (*func)(JobItem *)){
     return 1;
 }
 
-
 int get_fgjid(){
     return g_FgJid;
 }
@@ -244,6 +245,31 @@ int clear_fgjid(int jid){
 int get_jobgpid(int jid){
     if(!check_jidAvail(jid))
         return -1;
+    return g_Jobs[jid].items[0].pid;
+}
+
+// int set_jobpgid(int jid){
+//     if(!check_jidAvail(jid))
+//         return -1;
+//     int nums = g_Jobs[jid].nums;
+//     int pgid = g_Jobs[jid].items[nums-1].pid;
+//     printf("set pgid: %d\n", pgid);
+//     for(int i = 0; i < nums; i++){
+//         printf("g_Jobs[jid].items[i].pid: %d pgid: %d\n", g_Jobs[jid].items[i].pid, pgid);
+//         setpgid(g_Jobs[jid].items[i].pid, pgid);
+//     }
+//     return 1;
+// }
+
+
+int print_jobpgids(int jid){
+    if(!check_jidAvail(jid))
+        return -1;
     int nums = g_Jobs[jid].nums;
-    return g_Jobs[jid].items[nums-1].pid;
+    int pgid =g_Jobs[jid].items[nums-1].pid;
+    for(int i = 0; i < nums; i++){
+        printf("pid : %d, pgid: %d\n", g_Jobs[jid].items[i].pid, getpgid(g_Jobs[jid].items[i].pid));
+        // setpgid(g_Jobs[jid].items[i].pid, pgid);
+    }
+    return 1;
 }

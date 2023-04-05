@@ -48,4 +48,7 @@ void set_fgjid(int jid);
 int clear_fgjid(int jid);
 
 int get_jobgpid(int jid);
-#endif 
+// int set_jobpgid(int jid);
+
+int print_jobpgids(int jid);
+#endif

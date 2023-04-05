@@ -3,6 +3,7 @@
 #include "builtin.h"
 #include "job.h"
 #include "signal.h"
+
 #define ZTH_MAXARGS   128
 #define MAXCMDLEN 256
 
@@ -188,7 +189,7 @@ void eval(char* cmdline)
 	int step = 0;
 	int last_fd[2];
 	int fd[2];
-	int jid = 1, sub_id = 0;
+	int jid = 1, pgid = 0;
 	while (step++ < jobNums) {
 		if (pipe(fd) < 0) {
 			perror("pipe");
@@ -206,13 +207,12 @@ void eval(char* cmdline)
 			if (pid == 0) {   /* Child runs user job */
 
 				//TODO 需要补充一个是环境变量的 VLtable2environ
-
-				UnMaskAll();
-
-				if (step == 1)
+				if(step == 1)
 					setpgid(0, 0);
 				else
-					setpgid(0, sub_id);
+					setpgid(0, pgid);
+
+				UnMaskAll();
 
 				//子进程中恢复默认处理方式
 				Signal(SIGCHLD, SIG_DFL);
@@ -259,39 +259,71 @@ void eval(char* cmdline)
 				if (step > 1) {	//第一步不关管道
 					Close(last_fd[1]); // 关闭管道写端
 					Close(last_fd[0]); // 关闭管道读端
+				} else{
+					pgid = pid;
 				}
-				else if (step == 1)
-					sub_id = pid;
 				last_fd[0] = fd[0];
 				last_fd[1] = fd[1];
 			}
 
 			/* Parent waits for foreground job to terminate */
-			if (!bg) {
-				if (step == 1) {
+			if(step == 1){
+				if(!bg){
 					jid = add_job(pid, S_RUNNING, subJob[step - 1]);
 					set_fgjid(jid);
+				} else{
+					jid = add_job(pid, S_RUNNING, subJob[step - 1]);
 				}
-				else if (step == jobNums) {
+				UnMaskAll();
+			} else if(step < jobNums){
+				if(!bg){
+					add_p2job(jid, pid, S_RUNNING, subJob[step - 1]);
+				} else{
+					add_p2job(jid, pid, S_RUNNING, subJob[step - 1]);
+				}
+				UnMaskAll();
+			} else if(step == jobNums) { 
+				if(!bg){
 					add_p2job(jid, pid, S_RUNNING, subJob[step - 1]);
 					UnMaskAll();
 					fg_wait(jid);
 				}
-				else
-					add_p2job(jid, pid, S_RUNNING, subJob[step - 1]);
-				UnMaskAll();
-			}
-			else {
-				if (step == 1) 
-					jid = add_job(pid, S_RUNNING, subJob[step - 1]);
-				else if (step == jobNums) {
+				else{
 					add_p2job(jid, pid, S_RUNNING, subJob[step - 1]);
 					printf("[%d] %d\n", jid, pid);
 				}
-				else 
-					add_p2job(jid, pid, S_RUNNING, subJob[step - 1]);
-				UnMaskAll();
+			} else{
+				//step > jobNums 不存在这种情况
+				;
 			}
+
+			/* Parent waits for foreground job to terminate */
+			// if (!bg) {
+			// 	if (step == 1) {
+			// 		jid = add_job(pid, S_RUNNING, subJob[step - 1]);
+			// 		set_fgjid(jid);
+			// 	}
+			// 	else if (step == jobNums) {
+			// 		add_p2job(jid, pid, S_RUNNING, subJob[step - 1]);
+			// 		UnMaskAll();
+			// 		fg_wait(jid);
+			// 	}
+			// 	else
+			// 		add_p2job(jid, pid, S_RUNNING, subJob[step - 1]);
+			// 	UnMaskAll();
+			// }
+			// else {
+			// 	if (step == 1) 
+			// 		jid = add_job(pid, S_RUNNING, subJob[step - 1]);
+			// 	else if (step == jobNums) {
+			// 		add_p2job(jid, pid, S_RUNNING, subJob[step - 1]);
+			// 		printf("[%d] %d\n", jid, pid);
+			// 	}
+			// 	else 
+			// 		add_p2job(jid, pid, S_RUNNING, subJob[step - 1]);
+			// 	UnMaskAll();
+			// }
+
 		}
 	}
 	//可执行到此，只能是父进程，父进程关闭所有管道
