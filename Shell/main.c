@@ -90,11 +90,10 @@ int parseline(char* buf, char** argv)
 
 	// 检测输入输出重定向符号
 
+
 	char* delim;         /* Points to first space delimiter(第一个空格分隔符的指针) */
 	int argc;            /* Number of args */
-	int bg;              /* Background job? */
 
-	buf[strlen(buf) - 1] = ' ';  /* Replace trailing '\n' with space */
 	while (*buf && (*buf == ' ')) /* Ignore leading spaces(忽略前导空格) */
 		buf++;
 
@@ -156,6 +155,9 @@ void eval(char* cmdline)
 	if (strlen(buf) == 0)
 		return;
 
+	/* 一定有换行，忽略换行符 */
+	buf[strlen(buf) - 1] = ' ';
+
 	// 处理 & 
 	/* Should the job run in the background? */
 	while (buf[strlen(buf)-1] == ' ')
@@ -165,6 +167,9 @@ void eval(char* cmdline)
 
 	if (strlen(buf) == 0)
 		return;
+	
+	/* parseline需要借助后导空格 */
+	strcat(buf, " ");
 
 	// 处理 | 
 	// 先在buf里处理管道符，若有，则记录管道符数量 + 1个子进程，维护它们的buf结构，等待后续创建
@@ -183,6 +188,7 @@ void eval(char* cmdline)
 	int step = 0;
 	int last_fd[2];
 	int fd[2];
+	int jid = 1, sub_id = 0;
 	while (step++ < jobNums) {
 		if (pipe(fd) < 0) {
 			perror("pipe");
@@ -194,8 +200,25 @@ void eval(char* cmdline)
 			return;   /* Ignore empty lines */
 
 		if (!builtin_command(argv)) {
+			//fork前后保护一下
+			MaskAll();
 			pid = Fork();
 			if (pid == 0) {   /* Child runs user job */
+
+				//TODO 需要补充一个是环境变量的 VLtable2environ
+
+				UnMaskAll();
+
+				if (step == 1)
+					setpgid(0, 0);
+				else
+					setpgid(0, sub_id);
+
+				//子进程中恢复默认处理方式
+				Signal(SIGCHLD, SIG_DFL);
+				Signal(SIGTSTP, SIG_DFL);
+				Signal(SIGINT, SIG_DFL);
+
 				if (step == 1) {
 					Close(fd[0]);
 					Dup2(fd[1], STDOUT_FILENO);
@@ -237,18 +260,38 @@ void eval(char* cmdline)
 					Close(last_fd[1]); // 关闭管道写端
 					Close(last_fd[0]); // 关闭管道读端
 				}
+				else if (step == 1)
+					sub_id = pid;
 				last_fd[0] = fd[0];
 				last_fd[1] = fd[1];
 			}
 
 			/* Parent waits for foreground job to terminate */
 			if (!bg) {
-				int status;
-				if (waitpid(pid, &status, 0) < 0)
-					unix_error("waitfg: waitpid error");
+				if (step == 1) {
+					jid = add_job(pid, S_RUNNING, subJob[step - 1]);
+					set_fgjid(jid);
+				}
+				else if (step == jobNums) {
+					add_p2job(jid, pid, S_RUNNING, subJob[step - 1]);
+					UnMaskAll();
+					fg_wait(jid);
+				}
+				else
+					add_p2job(jid, pid, S_RUNNING, subJob[step - 1]);
+				UnMaskAll();
 			}
-			else
-				printf("%d %s", pid, cmdline);
+			else {
+				if (step == 1) 
+					jid = add_job(pid, S_RUNNING, subJob[step - 1]);
+				else if (step == jobNums) {
+					add_p2job(jid, pid, S_RUNNING, subJob[step - 1]);
+					printf("[%d] %d\n", jid, pid);
+				}
+				else 
+					add_p2job(jid, pid, S_RUNNING, subJob[step - 1]);
+				UnMaskAll();
+			}
 		}
 	}
 	//可执行到此，只能是父进程，父进程关闭所有管道
@@ -310,7 +353,7 @@ void eval(char* cmdline)
 					// unix_error("waitfg: waitpid error");
 			}
 			else {
-				int jid = add_job(pid, S_RUNNING, buf);
+				int jid = add_job(pid, S_RUNNING, subJob[step - 1]);
 				printf("[%d] %d\n", jid, pid);
 				UnMaskAll();
 				// printf("%d %s", pid, cmdline);
