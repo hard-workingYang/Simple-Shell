@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include "signal.h"
 #include "job.h"
+#include <errno.h>
 
 //处理子进程
 void sigchld_handler(int signum)
@@ -40,10 +41,14 @@ void sigchld_handler(int signum)
 static void sigtstp_pid(JobItem *jobitem){
     if(jobitem->state == S_RUNNING){
     //    if(kill(-jobitem->pid, SIGSTOP) == 0){
-       if(kill(-jobitem->pid, SIGTSTP) == 0){
-    //    if(kill(-jobitem->pid, SIGINT) == 0){
+        printf("try to kill : %d\n", jobitem->pid);
+
+        int ret;
+        if((ret = kill(jobitem->pid, SIGTSTP)) == 0){
+            // printf("modify %d to suspended\n", jobitem->pid);
             jobitem->state = S_SUSPENDED;
-       }
+        }
+        printf("ret: %d, errno = %d\n", ret, errno);
     }
 }
 
@@ -60,7 +65,13 @@ void sigtstp_handler(int signum){
     }
     
     //将job中可以暂停的进程都暂停
-    process_job(jid, sigtstp_pid);
+    //原来是遍历每一个线程后发送信号，此时kill函数中的值应该为正数（因为组id修改了，使用负数可能会报错）
+    //现在改为直接向组id发送kill
+    int job_gpid = get_jobgpid(jid);
+    int ret = kill(-job_gpid, SIGTSTP);
+    // process_job(jid, sigtstp_pid);
+    printf("job_gpid: %d\n", job_gpid);
+    printf("ret: %d, errno = %d\n", ret, errno);
 
     //清除fgjid的记录
     clear_fgjid(jid);

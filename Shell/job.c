@@ -240,3 +240,10 @@ int clear_fgjid(int jid){
     }
     return 0;
 }
+
+int get_jobgpid(int jid){
+    if(!check_jidAvail(jid))
+        return -1;
+    int nums = g_Jobs[jid].nums;
+    return g_Jobs[jid].items[nums-1].pid;
+}
