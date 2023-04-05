@@ -3,7 +3,7 @@
 #include "builtin.h"
 #include "job.h"
 #include "signal.h"
-#define MAXARGS   128
+#define ZTH_MAXARGS   128
 #define MAXCMDLEN 256
 
 /* function prototypes */
@@ -146,7 +146,7 @@ int deal_re_in_out(const char **argv)
 
 void eval(char* cmdline)
 {
-	char* argv[MAXARGS]; /* Argument list execve() */
+	char* argv[ZTH_MAXARGS]; /* Argument list execve() */
 	char buf[MAXLINE];   /* Holds modified command line */
 	int bg;              /* Should the job run in bg or fg? */
 	pid_t pid;           /* Process id */
@@ -168,7 +168,7 @@ void eval(char* cmdline)
 
 	// 处理 | 
 	// 先在buf里处理管道符，若有，则记录管道符数量 + 1个子进程，维护它们的buf结构，等待后续创建
-	char subJob[MAXARGS][MAXLINE];
+	char subJob[ZTH_MAXARGS][MAXLINE];
 	int jobNums = 0;
 	if (strchr(buf, '|') != NULL) {
 		char* tmpJob;

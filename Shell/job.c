@@ -3,6 +3,14 @@
 #include "job.h"
 #include "signal.h"
 
+Job g_Jobs[MAXJOBS];
+
+int g_MinPossIdx;      //可能可用的最小idx
+int g_MaxInuseIdx;     //已经在用的最大idx
+int g_LatestIdx;       //最新创建job的idx
+int g_SecondLatestIdx; //次新job的idx
+int g_FgJid;           //当前的前台作业jid(前台作业一次应该只有一个)
+
 int check_jidAvail(int jid){
     if(jid >= MAXJOBS || g_Jobs[jid].inuse == 0)
         return 0;
