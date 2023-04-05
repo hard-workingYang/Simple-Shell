@@ -21,9 +21,9 @@ struct VarItem{
     // char *varName;
     char *addr;
 };
-// typedef struct VarItem VLTable[MAXVARS];
+// typedef struct VarItem g_VLTable[MAXVARS];
 
-struct VarItem VLTable[MAXVARS];
+struct VarItem g_VLTable[MAXVARS];
 int VarItemNum = 0;
 
 //读取表
@@ -34,7 +34,7 @@ int VLenviron2Table(){
     {
         char *line = *envir;
         // char *pos  = strchr(line, '=');
-        struct VarItem *item = &VLTable[tableIdx];
+        struct VarItem *item = &g_VLTable[tableIdx];
         item->isGrobal = 1;
         // item.varName = malloc((pos-line+2)*sizeof(char));
         // strncpy(item.varName, line, pos-line+1);
@@ -50,8 +50,8 @@ int VLenviron2Table(){
 
 static char *getVLByNameUnSafe(const char *name){
     for(int i = 0; i < VarItemNum; i++){
-        if(strncmp(VLTable[i].addr, name, strlen(name)) == 0){
-            return VLTable[i].addr + strlen(name) + 1;
+        if(strncmp(g_VLTable[i].addr, name, strlen(name)) == 0){
+            return g_VLTable[i].addr + strlen(name) + 1;
         }
     }
     return NULL;
@@ -73,8 +73,8 @@ static int addNewVarItem(const char* varName, const char *value, char isGrobal){
     newVar[pos++] = '=';
     for(int i = 0; value[i]!='\0';i++,pos++)
         newVar[pos] = value[i];
-    VLTable[VarItemNum].isGrobal = isGrobal; 
-    VLTable[VarItemNum].addr = newVar; 
+    g_VLTable[VarItemNum].isGrobal = isGrobal; 
+    g_VLTable[VarItemNum].addr = newVar; 
     VarItemNum++;
     return 1;
 }
@@ -102,7 +102,7 @@ int setLocalVLByName(const char* varName, const char *value){
 
 void traverseVLTable(void (*func)(char, char*)){
     for(int i = 0; i < VarItemNum; i++){
-        func(VLTable[i].isGrobal, VLTable[i].addr);
+        func(g_VLTable[i].isGrobal, g_VLTable[i].addr);
     }
 }
 

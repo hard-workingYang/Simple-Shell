@@ -1,6 +1,10 @@
 #include <stdio.h>
+#include <unistd.h>
 
 int main()
 {
-    printf("hello world");
+    while(1){
+        printf("hello world\n");
+        sleep(1);
+    }
 }

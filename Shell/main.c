@@ -1,20 +1,46 @@
 /* $begin shellmain */
 #include "csapp.h"
 #include "builtin.h"
-#define MAXARGS   128
+#include "job.h"
+#include "signal.h"
 
+#define MAXCMDLEN 256
 /* function prototypes */
 void eval(char* cmdline);
 int parseline(char* buf, char** argv);
 int builtin_command(char** argv);
 char* splitine(char* subCmd, char* tmpCmdline, char* tmpSubCmd);
 
+void init(){
+	// 读取系统环境变量
+	VLenviron2Table();
+
+	//jobs对象初始化
+	init_jobs();
+
+	init_signmask();
+
+	//淘汰了，因为不能一次把所有后台子进程都退出，实际上只会退出前台的job
+	//忽略退出的两个信号
+	// Signal(SIGINT, SIG_IGN); //ctrl c
+	// Signal(SIGQUIT, SIG_IGN);
+
+	//要处理一下子进程的退出情况
+	Signal(SIGCHLD, sigchld_handler);
+	//ctrl-z信号处理
+	Signal(SIGTSTP, sigtstp_handler);
+	//ctrl-c信号处理
+	Signal(SIGINT, sigini_handler);
+
+}
+
 int main()
 {
 	char cmdline[MAXLINE]; /* 保存命令行 */
 
-	// 读取系统环境变量
-	VLenviron2Table();
+    dup2(1, 2);
+
+	init();
 
 	while (1) {
 		/* 读入 */
@@ -50,7 +76,21 @@ void eval(char* cmdline)
 		return;   /* Ignore empty lines */
 
 	if (!builtin_command(argv)) {
+
+		//fork前后保护一下
+		MaskAll();
+		
 		if ((pid = Fork()) == 0) {   /* Child runs user job */
+
+			//TODO 需要补充一个是环境变量的 VLtable2environ
+
+			UnMaskAll();
+
+			setpgid(0, 0);
+			//子进程中恢复默认处理方式
+			Signal(SIGCHLD, SIG_DFL);
+			Signal(SIGTSTP, SIG_DFL);
+			Signal(SIGINT, SIG_DFL);
 
 			/* 想执行命令需要从环境目录中进行，这里将execve直接替换为execvp */
 #ifdef __ZTH__USING_PATH
@@ -68,12 +108,23 @@ void eval(char* cmdline)
 
 		/* Parent waits for foreground job to terminate */
 		if (!bg) {
-			int status;
-			if (waitpid(pid, &status, 0) < 0)
-				unix_error("waitfg: waitpid error");
+			
+			//这里需要添加一下对应进程的信息
+			int jid = add_job(pid, S_RUNNING, buf);
+			set_fgjid(jid);
+			UnMaskAll();
+
+			fg_wait(jid);
+			// int status;
+			// if (waitpid(pid, &status, 0) < 0)
+				// unix_error("waitfg: waitpid error");
 		}
-		else
-			printf("%d %s", pid, cmdline);
+		else{
+			int jid = add_job(pid, S_RUNNING, buf);
+			printf("[%d] %d\n", jid, pid);
+			UnMaskAll();
+			// printf("%d %s", pid, cmdline);
+		}
 	}
 	return;
 }
@@ -87,6 +138,16 @@ int builtin_command(char** argv)
 		return 1;
 	else if (!strcmp(argv[0], "cd"))
 		return builtin_cd(argv);
+	else if (!strcmp(argv[0], "jobs"))
+		return builtin_jobs(argv);
+	else if (!strcmp(argv[0], "bg"))
+		return builtin_bg(argv);	
+	else if (!strcmp(argv[0], "fg"))
+		return builtin_fg(argv);
+	else if (!strcmp(argv[0], "kill")) //严格来说不算是内置的？但中间的一些实现要修改一下
+		return builtin_kill(argv);
+
+	
 	return 0;                     /* Not a builtin command */
 }
 /* $end eval */

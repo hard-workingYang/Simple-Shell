@@ -1,0 +1,16 @@
+{
+    "files.associations": {
+        "typeinfo": "c",
+        "__node_handle": "c",
+        "iterator": "c",
+        "locale": "c",
+        "string": "c",
+        "signal.h": "c",
+        "types.h": "c",
+        "stdio.h": "c",
+        "job.h": "c",
+        "algorithm": "c",
+        "builtin.h": "c",
+        "unistd.h": "c"
+    }
+}
