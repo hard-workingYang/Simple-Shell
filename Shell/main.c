@@ -91,7 +91,6 @@ int parseline(char* buf, char** argv)
 
 	// 检测输入输出重定向符号
 
-
 	char* delim;         /* Points to first space delimiter(第一个空格分隔符的指针) */
 	int argc;            /* Number of args */
 

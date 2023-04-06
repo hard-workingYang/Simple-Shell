@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "bitset": "c",
+        "stdio.h": "c",
+        "locale": "c",
+        "string": "c"
+    }
+}

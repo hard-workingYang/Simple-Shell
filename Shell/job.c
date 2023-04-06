@@ -242,7 +242,7 @@ int clear_fgjid(int jid){
     return 0;
 }
 
-int get_jobgpid(int jid){
+int get_jobpgid(int jid){
     if(!check_jidAvail(jid))
         return -1;
     return g_Jobs[jid].items[0].pid;

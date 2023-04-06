@@ -12,8 +12,9 @@
 #define S_RUNNING 0
 #define S_SUSPENDED 1
 #define S_DONE 2
-#define S_KILLED 3
-#define S_ABORTED 4
+#define S_ABORTED 3
+#define S_KILLED 4
+
 
 typedef struct {
 	int state;
@@ -26,6 +27,7 @@ typedef struct{
 	int nums;
     int inuse;
 } Job;
+
 
 //大调数据结构，因为发现jobs的结构应该是数组结构
 int check_jidAvail(int jid);
@@ -47,7 +49,7 @@ int get_secondLatestJobid();
 void set_fgjid(int jid);
 int clear_fgjid(int jid);
 
-int get_jobgpid(int jid);
+int get_jobpgid(int jid);
 // int set_jobpgid(int jid);
 
 int print_jobpgids(int jid);
